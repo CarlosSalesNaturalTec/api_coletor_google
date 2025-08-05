@@ -1,2 +1,5 @@
 fastapi
 uvicorn
+google-cloud-firestore
+firebase_admin
+python-dotenv
