@@ -3,6 +3,8 @@ from google.cloud.firestore_v1.client import Client
 from database import get_db
 from dotenv import load_dotenv
 import os
+from datetime import datetime
+import pytz
 import requests
 
 load_dotenv()
@@ -22,18 +24,24 @@ def coletar_dados(db: Client = Depends(get_db)):
     try:
         # Obter termos de pesquisa do Firestore
         termos_ref = db.collection("termos_pesquisa")
-        termos_docs = termos_ref.stream()
-        termos = [doc.to_dict().get("termos") for doc in termos_docs]
+        termos_docs = list(termos_ref.stream())
 
-        if not termos:
+        if not termos_docs:
             raise HTTPException(status_code=404, detail="Nenhum termo de pesquisa encontrado no Firestore.")
 
         resultados_finais = []
+        
+        fuso_horario_brasil = pytz.timezone('America/Sao_Paulo')
+        data_pesquisa = datetime.now(fuso_horario_brasil)
 
         # Consultar a API do Google CSE para cada conjunto de termos
-        for termo in termos:
-            if termo and isinstance(termo, list):
-                query_string = " ".join(termo)                
+        for doc in termos_docs:
+            doc_data = doc.to_dict()
+            termos = doc_data.get("termos")
+            id_busca = doc_data.get("id_busca")
+
+            if termos and isinstance(termos, list):
+                query_string = " ".join(termos)
                 search_url = "https://www.googleapis.com/customsearch/v1"
                 params = {
                     "key": GOOGLE_API_KEY,
@@ -46,8 +54,15 @@ def coletar_dados(db: Client = Depends(get_db)):
 
                 # Salvar resultados no Firestore
                 for resultado in resultados:
-                    # Aqui você pode normalizar e filtrar os dados conforme necessário
-                    db.collection("resultados_pesquisa").add(resultado)
+                    dados_para_salvar = {
+                        "title": resultado.get("title"),
+                        "snippet": resultado.get("snippet"),
+                        "displayLink": resultado.get("displayLink"),
+                        "link": resultado.get("link"),
+                        "data_pesquisa": data_pesquisa,
+                        "id_busca": id_busca
+                    }
+                    db.collection("resultados_pesquisa").add(dados_para_salvar)
                 resultados_finais.extend(resultados)
 
         return {"message": "Dados coletados e salvos com sucesso!", "resultados": len(resultados_finais)}
