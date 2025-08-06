@@ -30,19 +30,24 @@ def coletar_dados(db: Client = Depends(get_db)):
 
         resultados_finais = []
 
-        # Consultar a API do Google CSE para cada termo
+        # Consultar a API do Google CSE para cada conjunto de termos
         for termo in termos:
-            if termo:
-                search_url = f"https://www.googleapis.com/customsearch/v1?key={GOOGLE_API_KEY}&cx={CUSTOM_SEARCH_ENGINE_ID}&q={termo}"
-                response = requests.get(search_url)
+            if termo and isinstance(termo, list):
+                query_string = " ".join(termo)                
+                search_url = "https://www.googleapis.com/customsearch/v1"
+                params = {
+                    "key": GOOGLE_API_KEY,
+                    "cx": CUSTOM_SEARCH_ENGINE_ID,
+                    "q": query_string
+                }
+                response = requests.get(search_url, params=params)
                 response.raise_for_status()  # Lança exceção para respostas de erro
                 resultados = response.json().get("items", [])
-                
+
                 # Salvar resultados no Firestore
                 for resultado in resultados:
                     # Aqui você pode normalizar e filtrar os dados conforme necessário
                     db.collection("resultados_pesquisa").add(resultado)
-                
                 resultados_finais.extend(resultados)
 
         return {"message": "Dados coletados e salvos com sucesso!", "resultados": len(resultados_finais)}

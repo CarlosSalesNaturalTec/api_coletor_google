@@ -1,10 +1,12 @@
-from firebase_admin import credentials, initialize_app, firestore
+from firebase_admin import credentials, initialize_app, firestore, _apps
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
 def get_db():
-    cred = credentials.Certificate(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
-    initialize_app(cred)
+    # Garante que o Firebase seja inicializado apenas uma vez.
+    if not _apps:
+        cred = credentials.Certificate(os.getenv('GOOGLE_APPLICATION_CREDENTIALS'))
+        initialize_app(cred)
     return firestore.client()
