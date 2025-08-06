@@ -31,7 +31,6 @@ def coletar_dados(db: Client = Depends(get_db)):
         resultados_finais = []
         
         data_pesquisa = datetime.now(timezone.utc)
-        return {"data_pesquisa": data_pesquisa}
 
         # Consultar a API do Google CSE para cada conjunto de termos
         for doc in termos_docs:
