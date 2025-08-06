@@ -3,8 +3,7 @@ from google.cloud.firestore_v1.client import Client
 from database import get_db
 from dotenv import load_dotenv
 import os
-from datetime import datetime
-import pytz
+from datetime import datetime, timezone
 import requests
 
 load_dotenv()
@@ -31,8 +30,8 @@ def coletar_dados(db: Client = Depends(get_db)):
 
         resultados_finais = []
         
-        fuso_horario_brasil = pytz.timezone('America/Sao_Paulo')
-        data_pesquisa = datetime.now(fuso_horario_brasil)
+        data_pesquisa = datetime.now(timezone.utc)
+        return {"data_pesquisa": data_pesquisa}
 
         # Consultar a API do Google CSE para cada conjunto de termos
         for doc in termos_docs:
